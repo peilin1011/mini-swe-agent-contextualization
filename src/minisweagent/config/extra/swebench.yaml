@@ -221,10 +221,10 @@ environment:
     LESS: -R
     PIP_PROGRESS_BAR: 'off'
     TQDM_DISABLE: '1'
-  environment_class: docker
+  environment_class: singularity
 
 model:
-  model_name: "claude-sonnet-4-20250514"
+  model_name: "gpt-4"
   model_kwargs:
     drop_params: true
     temperature: 0.0

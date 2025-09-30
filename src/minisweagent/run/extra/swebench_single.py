@@ -39,6 +39,8 @@ def main(
     # fmt: on
     """Run on a single SWE-Bench instance."""
     dataset_path = DATASET_MAPPING.get(subset, subset)
+    dataset_path = "/home/hpc/b273dd/b273dd14/.cache/huggingface/datasets/princeton-nlp___swe-bench_lite/default/0.0.0"
+    split = "test"
     logger.info(f"Loading dataset from {dataset_path}, split {split}...")
     instances = {
         inst["instance_id"]: inst  # type: ignore

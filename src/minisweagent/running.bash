@@ -7,4 +7,4 @@ conda activate mini-swe-agent
 python src/minisweagent/run/extra/swebench_single.py -i 0 -m claude-sonnet-4-20250514 --environment-class singularity
 
 
-python src/minisweagent/run/extra/swebench.py --subset lite --split test --slice "0:1" -o ./swebench_verified_results -w 1 --environment-class singularity -m gpt-5 --redo-existing
+python src/minisweagent/run/extra/swebench.py --subset verified --split test --slice "0:1" -o ./swebench_verified_results -w 1 --environment-class singularity -m gpt-5 --redo-existing
