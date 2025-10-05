@@ -42,16 +42,23 @@ class SingularityEnvironment:
         for attempt in range(max_retries):
             sandbox_dir = Path(tempfile.gettempdir()) / f"minisweagent-{uuid.uuid4().hex[:8]}"
             try:
-                subprocess.run(
+                result = subprocess.run(
                     [self.config.executable, "build", "--sandbox", sandbox_dir, self.config.image],
                     check=True,
                     capture_output=True,
+                    text=True,
                 )
                 break
             except subprocess.CalledProcessError as e:
                 shutil.rmtree(sandbox_dir, ignore_errors=True)
+                # Filter out NVIDIA-related warnings from stderr
+                stderr = e.stderr if isinstance(e.stderr, str) else e.stderr.decode() if e.stderr else ""
+                stderr_filtered = "\n".join(
+                    line for line in stderr.splitlines()
+                    if not (line.startswith("WARNING:") and "nvidia" in line.lower())
+                )
                 self.logger.error(
-                    f"Error building image {self.config.image}, stdout: {e.stdout}, stderr: {e.stderr} (attempt {attempt + 1}/{max_retries})"
+                    f"Error building image {self.config.image}, stdout: {e.stdout}, stderr: {stderr_filtered} (attempt {attempt + 1}/{max_retries})"
                 )
                 if attempt == max_retries - 1:
                     raise
@@ -85,12 +92,23 @@ class SingularityEnvironment:
             encoding="utf-8",
             errors="replace",
             stdout=subprocess.PIPE,
-            stderr=subprocess.STDOUT,
+            stderr=subprocess.PIPE,
         )
-        return {"output": result.stdout, "returncode": result.returncode}
+        # Filter out NVIDIA-related warnings from stderr, then combine with stdout
+        stderr_filtered = "\n".join(
+            line for line in result.stderr.splitlines()
+            if not (line.startswith("WARNING:") and any(
+                keyword in line for keyword in ["nvidia", "nv files", ".json", "doesn't exist in container"]
+            ))
+        )
+        output = result.stdout
+        if stderr_filtered:
+            output = output + stderr_filtered if output else stderr_filtered
+        return {"output": output, "returncode": result.returncode}
 
     def cleanup(self):
-        shutil.rmtree(self.sandbox_dir, ignore_errors=True)
+        if hasattr(self, "sandbox_dir"):
+            shutil.rmtree(self.sandbox_dir, ignore_errors=True)
 
     def __del__(self):
         """Cleanup sandbox when object is destroyed."""
