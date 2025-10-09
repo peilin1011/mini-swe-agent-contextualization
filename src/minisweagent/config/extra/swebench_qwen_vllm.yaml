@@ -224,7 +224,7 @@ environment:
   environment_class: singularity  # 使用 Singularity 环境
 
 model:
-  model_name: "openai/Qwen/Qwen3-32B"  # 使用 OpenAI 兼容接口
+  model_name: "Qwen/Qwen3-32B"  # 使用 OpenAI 兼容接口
   model_kwargs:
     custom_llm_provider: "openai"
     api_base: "http://localhost:8000/v1"  # vLLM 服务器地址

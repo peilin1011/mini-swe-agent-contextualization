@@ -8,7 +8,7 @@ from dataclasses import asdict, dataclass
 from jinja2 import StrictUndefined, Template
 
 from minisweagent import Environment, Model
-
+from minisweagent.utils.log import logger
 
 @dataclass
 class AgentConfig:
@@ -69,6 +69,11 @@ class DefaultAgent:
 
     def add_message(self, role: str, content: str, **kwargs):
         self.messages.append({"role": role, "content": content, **kwargs})
+        
+        # 使用 debug 级别，只写文件，不显示在终端
+        logger.debug(f"[MESSAGE] Role: {role.upper()}")
+        logger.debug(f"[CONTENT] {content[:500]}")
+        logger.debug("-" * 80)
 
     def run(self, task: str, **kwargs) -> tuple[str, str]:
         """Run step() until agent is finished. Return exit status & message"""
@@ -128,5 +133,5 @@ class DefaultAgent:
         """Raises Submitted exception with final output if the agent has finished its task."""
         lines = output.get("output", "").lstrip().splitlines(keepends=True)
         #print(f'output: {lines}, num {len(lines)}')
-        if len(lines)>12 and lines[12].strip() in ["MINI_SWE_AGENT_FINAL_OUTPUT", "COMPLETE_TASK_AND_SUBMIT_FINAL_OUTPUT"]:
-            raise Submitted("".join(lines[1:]))
+        if lines and lines[0].strip() in ["MINI_SWE_AGENT_FINAL_OUTPUT", "COMPLETE_TASK_AND_SUBMIT_FINAL_OUTPUT"]:
+            raise Submitted("\n".join(lines[1:]))

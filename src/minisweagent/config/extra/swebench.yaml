@@ -224,7 +224,7 @@ environment:
   environment_class: singularity
 
 model:
-  model_name: "gpt-4"
+  model_name: "gpt-5"
   model_kwargs:
     drop_params: true
     temperature: 0.0

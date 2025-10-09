@@ -2,7 +2,7 @@ salloc --gres=gpu:a40:1 --time=1:00:00
 export http_proxy=http://proxy.nhr.fau.de:80
 export https_proxy=http://proxy.nhr.fau.de:80
 module load python/3.12-conda
-conda activate mini-swe-agent
+conda activate mini-swe-agent311
 
 python src/minisweagent/run/extra/swebench_single.py -i 0 -m claude-sonnet-4-20250514 --environment-class singularity
 

@@ -3,12 +3,13 @@
 # $1: First argument is the run identifier or name
 
 export HF_HOME="/anvme/workspace/b273dd14-swe/.cache/huggingface"
-export CUDA_VISIBLE_DEVICES=2,3
+export CUDA_VISIBLE_DEVICES=0,1,2,3,4,5,6,7
 export NO_PROXY="localhost,127.0.0.1"
 export no_proxy="localhost,127.0.0.1"
 
 model_name="Qwen/Qwen3-32B"
-log_dir='logs'
+#model_name="Qwen/Qwen3-32B"
+log_dir='/anvme/workspace/b273dd14-swe/logs'
 TIMESTAMP=$(date +%Y%m%d-%H%M%S)
 
 run_id="${1:-unspecified_run}"
@@ -47,16 +48,15 @@ trap cleanup SIGINT SIGTERM EXIT
 #########################################################
 
 vllm serve $model_name \
-    --tensor_parallel_size $(echo $CUDA_VISIBLE_DEVICES | tr -cd ',' | wc -c | awk '{print $1+1}') \
-    --enforce_eager \
-    --gpu_memory_utilization 0.95 \
+    --tensor-parallel-size $(echo $CUDA_VISIBLE_DEVICES | tr -cd ',' | wc -c | awk '{print $1+1}') \
+    --enforce-eager \
+    --gpu-memory-utilization 0.95 \
     --enable-auto-tool-choice \
     --tool-call-parser hermes \
-    --reasoning-parser deepseek_r1 \
     --rope-scaling '{"factor": 4.0, "original_max_position_embeddings": 32768, "rope_type": "yarn"}' \
-    --enable_prefix_caching \
-    --max_num_seqs 23 \
-    --max_model_len $((128 * 1024 - 8 * 1024)) \
+    --enable-prefix-caching \
+    --max-num-seqs 23 \
+    --max-model-len $((128 * 1024 - 8 * 1024)) \
     --seed 41 \
     --port $port > $vllm_log_file 2>&1 &
 
@@ -143,18 +143,19 @@ fi
 cd /anvme/workspace/b273dd14-swe/mini-swe-agent
 
 echo "🚀 启动 mini-SWE-agent 评估..."
+
 python src/minisweagent/run/extra/swebench.py \
   --subset verified \
   --split test \
-  --filter "astropy__astropy-14309" \
+  --slice $SLICE \
   -o $OUTPUT_DIR \
   -w $WORKERS \
   --config $CONFIG_FILE \
   --environment-class singularity \
   --model "Qwen/Qwen3-32B" \
-  --redo-existing 2>&1
+  --redo-existing
 
-SWE_EXIT_CODE=${PIPESTATUS[0]}
+SWE_EXIT_CODE=$?
 
 echo ""
 echo "========================================="
@@ -171,3 +172,4 @@ echo "📋 使用的配置文件: $CONFIG_FILE"
 
 # Wait for the process to fully terminate
 wait $vllm_pid 2>/dev/null || true
+

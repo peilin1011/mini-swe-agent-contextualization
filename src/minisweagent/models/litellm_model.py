@@ -16,8 +16,8 @@ from tenacity import (
 
 from minisweagent.models import GLOBAL_MODEL_STATS
 
-logger = logging.getLogger("litellm_model")
-
+#logger = logging.getLogger("litellm_model")
+from minisweagent.utils.log import logger 
 
 @dataclass
 class LitellmModelConfig:
