@@ -12,14 +12,14 @@
       "supports_vision": false,
       "supports_system_messages": true
     },
-    "qwen3-4b": {
+    "Qwen/Qwen3-4B": {
       "max_tokens": 8192,
       "max_input_tokens": 131072,
       "max_output_tokens": 8192,
       "input_cost_per_token": 0,
       "output_cost_per_token": 0,
       "litellm_provider": "openai",
-      "api_base": "http://localhost:8000/v1",
+      "api_base": "http://localhost:8001/v1",
       "api_key": "EMPTY",
       "mode": "chat",
       "supports_function_calling": false,
