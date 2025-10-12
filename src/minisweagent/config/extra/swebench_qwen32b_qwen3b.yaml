@@ -219,44 +219,62 @@ agent:
   
   # Summary model 配置 - 使用轻量级的 Qwen3B 模型进行压缩
   summary_model:
-    model_name: "Qwen/Qwen3-4B"
+    model_name: "Qwen/Qwen3-32B"
     api_base: "http://localhost:8001/v1"
     api_key: "EMPTY"
   
   # Condenser prompt 模板
   condenser_template: |
-    You are maintaining a context-aware state summary for an interactive agent.
-    You will be given a list of events corresponding to actions taken by the agent. Track:
+  You are maintaining a context-aware state summary for an interactive agent.
+  You will be given a list of events corresponding to actions taken by the agent. Track:
 
-    USER_CONTEXT: (Preserve essential user requirements, goals, and clarifications in concise form)
+  USER_CONTEXT: (Preserve essential user requirements, goals, and clarifications in concise form)
 
-    COMPLETED: (Tasks completed so far, with brief results)
-    PENDING: (Tasks that still need to be done)
-    CURRENT_STATE: (Current variables, data structures, or relevant state)
+  COMPLETED: (Tasks completed so far, with brief results)
+  PENDING: (Tasks that still need to be done)
+  CURRENT_STATE: (Current variables, data structures, or relevant state)
 
-    For code-specific tasks, also include:
-    CODE_STATE: {File paths, function signatures, data structures}
-    TESTS: {Failing cases, error messages, outputs}
-    CHANGES: {Code edits, variable updates}
-    DEPS: {Dependencies, imports, external calls}
-    VERSION_CONTROL_STATUS: {Repository state, current branch, PR status, commit history}
+  For code-specific tasks, also include:
+  CODE_STATE: {File paths, function signatures, data structures}
+  TESTS: {Failing cases, error messages, outputs}
+  CHANGES: {Code edits, variable updates}
+  DEPS: {Dependencies, imports, external calls}
+  VERSION_CONTROL_STATUS: {Repository state, current branch, PR status, commit history}
 
-    PRIORITIZE:
-    1. Adapt tracking format to match the actual task type
-    2. Capture key user requirements and goals
-    3. Track dependencies between subtasks
-    4. Update state as agent makes progress
-    5. Keep failed attempts brief but informative
+  PRIORITIZE:
+  1. Adapt tracking format to match the actual task type
+  2. Capture key user requirements and goals
+  3. Track dependencies between subtasks
+  4. Update state as agent makes progress
+  5. Keep failed attempts brief but informative
 
-    Given the following conversation between the agent and environment, determine if there's a completed subtask that should be summarized.
+  SUBTASKS (for debugging or issue resolution workflows):
+  1. Analyze the codebase by finding and reading relevant files
+  2. Create a script to reproduce the issue
+  3. Edit the source code to resolve the issue
+  4. Verify your fix works by running your script again
+  5. Test edge cases to ensure your fix is robust
 
-    {{conversation_text}}
+  Given the following conversation between the agent and environment, determine if there's a completed subtask that should be summarized.
 
-    If a subtask has been completed (e.g., code analysis finished, file created, test passed), output a concise summary using the format above. Focus on what was accomplished and the current state.
+  {{conversation_text}}
 
-    If no subtask is complete yet (agent is still exploring or mid-task), output EXACTLY: "NO_COMPRESSION_NEEDED"
+  If a subtask has been completed, output a concise summary using the format above. Focus on what was accomplished and the current state.
 
-    Your summary should be concise but capture all critical information for continuing the work.
+  If no subtask is complete yet (agent is still exploring or mid-task), output EXACTLY: "NO_COMPRESSION_NEEDED"
+
+  Your summary should be concise but capture all critical information for continuing the work.
+
+  Example formats:
+    For code tasks:
+    USER_CONTEXT: Fix FITS card float representation issue
+    COMPLETED: Modified mod_float() in card.py, all tests passing
+    PENDING: Create PR, update documentation
+    CODE_STATE: mod_float() in card.py updated
+    TESTS: test_format() passed
+    CHANGES: str(val) replaces f"{val:.16G}"
+    DEPS: None modified
+    VERSION_CONTROL_STATUS: Branch: fix-float-precision, Latest commit: a1b2c3d
 
 environment:
   cwd: "/testbed"
