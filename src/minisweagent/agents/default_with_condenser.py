@@ -114,8 +114,10 @@ class DefaultAgent:
             logger.warning("⚠️ enable_condenser=True 但未配置 summary_model.model_name，压缩功能将被禁用")
 
     def render_template(self, template: str, **kwargs) -> str:
-        """Render a Jinja2 template with the given context."""
-        return Template(template).render(**kwargs)
+        template_vars = asdict(self.config) | self.env.get_template_vars() | self.model.get_template_vars()
+        return Template(template, undefined=StrictUndefined).render(
+            **kwargs, **template_vars, **self.extra_template_vars
+        )
 
     def _should_condense_and_compress(self) -> bool:
         """使用总结模型一步完成判断和压缩 - 如果完成subtask就用condenser_template总结，否则skip"""
@@ -204,9 +206,9 @@ class DefaultAgent:
         self.messages.append({"role": role, "content": content, **kwargs})
         
         # 使用 debug 级别，只写文件，不显示在终端
-        logger.debug(f"[MESSAGE] Role: {role.upper()}")
-        logger.debug(f"[CONTENT] {content[:500]}")
-        logger.debug("-" * 80)
+        logger.info(f"[MESSAGE] Role: {role.upper()}")
+        logger.info(f"[CONTENT] {content}")
+        logger.info("-" * 80)
 
     def run(self, task: str, **kwargs) -> tuple[str, str]:
         """Run step() until agent is finished. Return exit status & message"""
@@ -269,5 +271,5 @@ class DefaultAgent:
     def has_finished(self, output: dict[str, str]):
         """Raises Submitted exception with final output if the agent has finished its task."""
         lines = output.get("output", "").lstrip().splitlines(keepends=True)
-        if len(lines) > 12 and lines[12].strip() in ["MINI_SWE_AGENT_FINAL_OUTPUT", "COMPLETE_TASK_AND_SUBMIT_FINAL_OUTPUT"]:
-            raise Submitted("".join(lines[1:]))
+        if lines and lines[0].strip() in ["MINI_SWE_AGENT_FINAL_OUTPUT", "COMPLETE_TASK_AND_SUBMIT_FINAL_OUTPUT"]:
+            raise Submitted("\n".join(lines[1:]))

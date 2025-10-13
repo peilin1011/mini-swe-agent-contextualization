@@ -36,7 +36,7 @@ agent:
     2. Provide exactly ONE bash command to execute
 
     ## Important Boundaries
-    - MODIFY: Regular source code files in {{working_dir}}
+    - MODIFY: Regular source code files in /testbed (this is the working directory for all your subsequent commands)
     - DO NOT MODIFY: Tests, configuration files (pyproject.toml, setup.cfg, etc.)
 
     ## Recommended Workflow
@@ -210,7 +210,7 @@ agent:
     If you have completed your assignment, please consult the first message about how to
     submit your solution (you will not be able to continue working on this task after that).
   step_limit: 250
-  cost_limit: 0.0  # 本地模型无成本限制
+  cost_limit: 2.
   
   # 工作流程压缩配置 - 使用 Qwen32B 作为主模型，Qwen3B 作为压缩模型
   enable_condenser: True
@@ -225,56 +225,56 @@ agent:
   
   # Condenser prompt 模板
   condenser_template: |
-  You are maintaining a context-aware state summary for an interactive agent.
-  You will be given a list of events corresponding to actions taken by the agent. Track:
+    You are maintaining a context-aware state summary for an interactive agent.
+    You will be given a list of events corresponding to actions taken by the agent. Track:
 
-  USER_CONTEXT: (Preserve essential user requirements, goals, and clarifications in concise form)
+    USER_CONTEXT: (Preserve essential user requirements, goals, and clarifications in concise form)
 
-  COMPLETED: (Tasks completed so far, with brief results)
-  PENDING: (Tasks that still need to be done)
-  CURRENT_STATE: (Current variables, data structures, or relevant state)
+    COMPLETED: (Tasks completed so far, with brief results)
+    PENDING: (Tasks that still need to be done)
+    CURRENT_STATE: (Current variables, data structures, or relevant state)
 
-  For code-specific tasks, also include:
-  CODE_STATE: {File paths, function signatures, data structures}
-  TESTS: {Failing cases, error messages, outputs}
-  CHANGES: {Code edits, variable updates}
-  DEPS: {Dependencies, imports, external calls}
-  VERSION_CONTROL_STATUS: {Repository state, current branch, PR status, commit history}
+    For code-specific tasks, also include:
+    CODE_STATE: {File paths, function signatures, data structures}
+    TESTS: {Failing cases, error messages, outputs}
+    CHANGES: {Code edits, variable updates}
+    DEPS: {Dependencies, imports, external calls}
+    VERSION_CONTROL_STATUS: {Repository state, current branch, PR status, commit history}
 
-  PRIORITIZE:
-  1. Adapt tracking format to match the actual task type
-  2. Capture key user requirements and goals
-  3. Track dependencies between subtasks
-  4. Update state as agent makes progress
-  5. Keep failed attempts brief but informative
+    PRIORITIZE:
+    1. Adapt tracking format to match the actual task type
+    2. Capture key user requirements and goals
+    3. Track dependencies between subtasks
+    4. Update state as agent makes progress
+    5. Keep failed attempts brief but informative
 
-  SUBTASKS (for debugging or issue resolution workflows):
-  1. Analyze the codebase by finding and reading relevant files
-  2. Create a script to reproduce the issue
-  3. Edit the source code to resolve the issue
-  4. Verify your fix works by running your script again
-  5. Test edge cases to ensure your fix is robust
+    SUBTASKS (for debugging or issue resolution workflows):
+    1. Analyze the codebase by finding and reading relevant files
+    2. Create a script to reproduce the issue
+    3. Edit the source code to resolve the issue
+    4. Verify your fix works by running your script again
+    5. Test edge cases to ensure your fix is robust
 
-  Given the following conversation between the agent and environment, determine if there's a completed subtask that should be summarized.
+    Given the following conversation between the agent and environment, determine if there's a completed subtask that should be summarized.
 
-  {{conversation_text}}
+    {{conversation_text}}
 
-  If a subtask has been completed, output a concise summary using the format above. Focus on what was accomplished and the current state.
+    If a subtask has been completed, output a concise summary using the format above. Focus on what was accomplished and the current state.
 
-  If no subtask is complete yet (agent is still exploring or mid-task), output EXACTLY: "NO_COMPRESSION_NEEDED"
+    If no subtask is complete yet (agent is still exploring or mid-task), output EXACTLY: "NO_COMPRESSION_NEEDED"
 
-  Your summary should be concise but capture all critical information for continuing the work.
+    Your summary should be concise but capture all critical information for continuing the work.
 
-  Example formats:
-    For code tasks:
-    USER_CONTEXT: Fix FITS card float representation issue
-    COMPLETED: Modified mod_float() in card.py, all tests passing
-    PENDING: Create PR, update documentation
-    CODE_STATE: mod_float() in card.py updated
-    TESTS: test_format() passed
-    CHANGES: str(val) replaces f"{val:.16G}"
-    DEPS: None modified
-    VERSION_CONTROL_STATUS: Branch: fix-float-precision, Latest commit: a1b2c3d
+    Example formats:
+      For code tasks:
+      USER_CONTEXT: Fix FITS card float representation issue
+      COMPLETED: Modified mod_float() in card.py, all tests passing
+      PENDING: Create PR, update documentation
+      CODE_STATE: mod_float() in card.py updated
+      TESTS: test_format() passed
+      CHANGES: str(val) replaces f"{val:.16G}"
+      DEPS: None modified
+      VERSION_CONTROL_STATUS: Branch: fix-float-precision, Latest commit: a1b2c3d
 
 environment:
   cwd: "/testbed"

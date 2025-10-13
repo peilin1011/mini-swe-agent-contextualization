@@ -233,8 +233,8 @@ def main(
     
     logger.info("=" * 70 + "\n")
     
-    #dataset_path = DATASET_MAPPING.get(subset, subset)
-    dataset_path = "/anvme/workspace/b273dd14-swe/.cache/huggingface/datasets/princeton-nlp___swe-bench_verified/default/0.0.0"
+    dataset_path = DATASET_MAPPING.get(subset, subset)
+    #dataset_path = "/anvme/workspace/b273dd14-swe/.cache/huggingface/datasets/princeton-nlp___swe-bench_verified/default/0.0.0"
     logger.info(f"Loading dataset {dataset_path}, split {split}...")
     instances = list(load_dataset(dataset_path, split=split))
 

@@ -100,5 +100,37 @@
       "supports_parallel_function_calling": false,
       "supports_vision": false,
       "supports_system_messages": true
+    },
+    "gpt-5-mini": {
+      "max_tokens": 128000,
+      "max_input_tokens": 200000,
+      "max_output_tokens": 128000,
+      "input_cost_per_token": 6.25e-07,
+      "output_cost_per_token": 5e-06,
+      "cache_read_input_token_cost": 6.25e-08,
+      "litellm_provider": "openai",
+      "mode": "chat",
+      "supported_endpoints": [
+        "/v1/chat/completions",
+        "/v1/batch",
+        "/v1/responses"
+      ],
+      "supported_modalities": [
+        "text",
+        "image"
+      ],
+      "supported_output_modalities": [
+        "text"
+      ],
+      "supports_pdf_input": true,
+      "supports_function_calling": true,
+      "supports_parallel_function_calling": true,
+      "supports_response_schema": true,
+      "supports_vision": true,
+      "supports_prompt_caching": true,
+      "supports_system_messages": true,
+      "supports_tool_choice": true,
+      "supports_native_streaming": true,
+      "supports_reasoning": true
     }
   }
