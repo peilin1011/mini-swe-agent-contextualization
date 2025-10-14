@@ -211,17 +211,17 @@ agent:
     submit your solution (you will not be able to continue working on this task after that).
   step_limit: 250
   cost_limit: 2.
+
   
-  # 工作流程压缩配置 - 使用 Qwen32B 作为主模型，Qwen3B 作为压缩模型
-  enable_condenser: True
-  keep_first: 4
-  keep_last_round_per_task: 1
+  # 工作流程压缩配置 
+  enable_condenser: False
+  keep_first: 3
+  keep_last_round_per_task: 2
   
-  # Summary model 配置 - 使用轻量级的 Qwen3B 模型进行压缩
+  # Summary model 配置 
   summary_model:
-    model_name: "Qwen/Qwen3-32B"
-    api_base: "http://localhost:8001/v1"
-    api_key: "EMPTY"
+    model_name: "gpt-5-mini"
+
   
   # Condenser prompt 模板
   condenser_template: |
@@ -415,15 +415,10 @@ environment:
     LESS: -R
     PIP_PROGRESS_BAR: 'off'
     TQDM_DISABLE: '1'
-  environment_class: singularity
+  environment_class: docker
 
 model:
-  model_name: "Qwen/Qwen3-32B"
+  model_name: "gpt-5-mini"
   model_kwargs:
     custom_llm_provider: "openai"
-    api_base: "http://localhost:8000/v1"
-    api_key: "EMPTY"
-    temperature: 0.8
-    max_tokens: 2048
-    timeout: 600
 

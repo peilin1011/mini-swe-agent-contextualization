@@ -216,13 +216,13 @@ agent:
     If you have completed your assignment, please consult the first message about how to
     submit your solution (you will not be able to continue working on this task after that).
   step_limit: 250
-  cost_limit: 2.
+  cost_limit: 2.0
 
   
   # 工作流程压缩配置 
   enable_condenser: True
-  keep_first: 2
-  keep_last_round_per_task: 1
+  keep_first: 3
+  keep_last_round_per_task: 2
   
   # Summary model 配置 
   summary_model:
@@ -231,56 +231,186 @@ agent:
   
   # Condenser prompt 模板
   condenser_template: |
-    You are maintaining a context-aware state summary for an interactive agent.
-    You will be given a list of events corresponding to actions taken by the agent. Track:
-
-    USER_CONTEXT: (Preserve essential user requirements, goals, and clarifications in concise form)
-
-    COMPLETED: (Tasks completed so far, with brief results)
-    PENDING: (Tasks that still need to be done)
-    CURRENT_STATE: (Current variables, data structures, or relevant state)
-
-    For code-specific tasks, also include:
-    CODE_STATE: {File paths, function signatures, data structures}
-    TESTS: {Failing cases, error messages, outputs}
-    CHANGES: {Code edits, variable updates}
-    DEPS: {Dependencies, imports, external calls}
-    VERSION_CONTROL_STATUS: {Repository state, current branch, PR status, commit history}
-
-    PRIORITIZE:
-    1. Adapt tracking format to match the actual task type
-    2. Capture key user requirements and goals
-    3. Track dependencies between subtasks
-    4. Update state as agent makes progress
-    5. Keep failed attempts brief but informative
-
-    SUBTASKS (for debugging or issue resolution workflows):
-    1. Analyze the codebase by finding and reading relevant files
-    2. Create a script to reproduce the issue
-    3. Edit the source code to resolve the issue
-    4. Verify your fix works by running your script again
-    5. Test edge cases to ensure your fix is robust
-
-    Given the following conversation between the agent and environment, determine if there's a completed subtask that should be summarized.
-
+    You are maintaining a context-aware state summary for a software debugging agent.
+    
+    ## COMPRESSION DECISION (Check FIRST)
+    
+    Examine the recent conversation for <returncode> in USER messages:
+    - If ANY recent command has returncode != 0: Output "NO_COMPRESSION_NEEDED"
+    - If agent is still in exploration phase (steps 1-2): Output "NO_COMPRESSION_NEEDED"
+    - If a clear subtask milestone is reached (steps 3-5): Proceed to compress
+    
     {{conversation_text}}
-
-    If a subtask has been completed, output a concise summary using the format above. Focus on what was accomplished and the current state.
-
-    If no subtask is complete yet (agent is still exploring or mid-task), output EXACTLY: "NO_COMPRESSION_NEEDED"
-
-    Your summary should be concise but capture all critical information for continuing the work.
-
-    Example formats:
-      For code tasks:
-      USER_CONTEXT: Fix FITS card float representation issue
-      COMPLETED: Modified mod_float() in card.py, all tests passing
-      PENDING: Create PR, update documentation
-      CODE_STATE: mod_float() in card.py updated
-      TESTS: test_format() passed
-      CHANGES: str(val) replaces f"{val:.16G}"
-      DEPS: None modified
-      VERSION_CONTROL_STATUS: Branch: fix-float-precision, Latest commit: a1b2c3d
+    
+    ## DEBUGGING WORKFLOW STAGES
+    
+    1. **EXPLORE** - Find and read relevant files
+    2. **REPRODUCE** - Create script demonstrating the issue
+    3. **FIX** - Edit source code to resolve the issue
+    4. **VERIFY** - Run reproduction script with fix applied
+    5. **VALIDATE** - Test edge cases and robustness
+    
+    ## STATE TRACKING FORMAT
+    
+    When compression IS needed, use this structure:
+    
+    USER_CONTEXT: [One-line description of the PR/issue and user goals]
+    
+    WORKFLOW_STAGE: [EXPLORE|REPRODUCE|FIX|VERIFY|VALIDATE]
+    
+    COMPLETED:
+    - [Subtask 1 with brief result]
+    - [Subtask 2 with brief result]
+    
+    PENDING:
+    - [Next immediate task]
+    - [Future tasks if known]
+    
+    CURRENT_STATE:
+    - [Key variables, file locations, or context needed for next steps]
+    
+    CODE_STATE:
+    - File paths: [list modified or relevant files]
+    - Function signatures: [key functions being modified]
+    - Data structures: [relevant data structures if any]
+    
+    TESTS:
+    - Failing cases: [list failing test cases]
+    - Error messages: [any error output]
+    - Outputs: [expected vs actual outputs]
+    
+    CHANGES:
+    - [File:line]: [description of code edit]
+    - [Variable updates or state changes]
+    
+    DEPS:
+    - Dependencies: [external libraries used]
+    - Imports: [new imports added]
+    - External calls: [API or system calls]
+    
+    VERSION_CONTROL_STATUS:
+    - Repository state: [clean/modified/staged]
+    - Current branch: [branch name if known]
+    - Commit history: [relevant commits if any]
+    
+    ## EXAMPLES
+    
+    Example 1: Mid-exploration (NO compression)
+    
+    Agent runs: ls -la
+    Agent runs: grep -R "separability"
+    Agent runs: cat file.py | head -50
+    
+    Output: NO_COMPRESSION_NEEDED
+    Reason: Still exploring codebase, no subtask completed
+    
+    Example 2: After successful reproduction
+    
+    Agent created reproduction script showing bug
+    Script output confirmed incorrect behavior
+    
+    Output:
+    USER_CONTEXT: Fix separability_matrix returning incorrect results for nested CompoundModels in astropy
+    WORKFLOW_STAGE: REPRODUCE ✓ → Moving to FIX
+    COMPLETED:
+    - Located bug in astropy/modeling/separable.py at line 245
+    - Created reproduction script confirming the issue
+    - Identified root cause in _cstack() function
+    PENDING:
+    - Apply fix to line 245 in separable.py
+    - Re-run reproduction script to verify fix
+    - Test edge cases
+    CURRENT_STATE:
+    - Bug location: _cstack() function, line 245
+    - Root cause: fills matrix with 1 instead of copying right matrix
+    - Reproduction script ready for verification
+    CODE_STATE:
+    - File paths: astropy/modeling/separable.py
+    - Function signatures: _cstack(left, right)
+    - Data structures: coord_matrix (numpy array)
+    TESTS:
+    - Failing cases: Pix2Sky_TAN() & (Linear1D(10) & Linear1D(5))
+    - Error messages: None (logic error, not exception)
+    - Outputs: Expected [[T,T,F,F],[T,T,F,F],[F,F,T,F],[F,F,F,T]], Got [[T,T,F,F],[T,T,F,F],[F,F,T,T],[F,F,T,T]]
+    CHANGES:
+    - None yet
+    DEPS:
+    - Dependencies: numpy
+    - Imports: from astropy.modeling import models, separability_matrix
+    - External calls: None
+    VERSION_CONTROL_STATUS:
+    - Repository state: clean
+    - Current branch: unknown
+    - Commit history: N/A
+    
+    Example 3: After failed fix attempt
+    
+    Agent tried: applypatch command
+    Return code: 127 (command not found)
+    
+    Output: NO_COMPRESSION_NEEDED
+    Reason: Error occurred, preserve full context for retry
+    
+    Example 4: After successful fix and verification
+    
+    Agent modified code with sed
+    Agent re-ran reproduction script
+    All tests passing
+    
+    Output:
+    USER_CONTEXT: Fix separability_matrix returning incorrect results for nested CompoundModels in astropy
+    WORKFLOW_STAGE: VERIFY ✓ → Ready to VALIDATE/SUBMIT
+    COMPLETED:
+    - Fixed _cstack() function in astropy/modeling/separable.py:245
+    - Modified line to preserve right matrix values instead of filling with 1
+    - Verified all test cases now return correct separability matrices
+    - All three test scenarios (simple, nested, expanded) passing
+    PENDING:
+    - Optional: test additional edge cases (deeper nesting, other operators)
+    - Submit changes with git add/diff command
+    CURRENT_STATE:
+    - Fix confirmed working for all test cases
+    - Ready for final submission
+    - No additional errors or issues detected
+    CODE_STATE:
+    - File paths: astropy/modeling/separable.py (modified)
+    - Function signatures: _cstack(left, right) - fixed
+    - Data structures: cright matrix now correctly preserves values
+    TESTS:
+    - Failing cases: None (all passing)
+    - Error messages: None
+    - Outputs: All match expected values
+    CHANGES:
+    - astropy/modeling/separable.py:245: Changed "cright[-right.shape[0]:, -right.shape[1]:] = 1" to "cright[-right.shape[0]:, -right.shape[1]:] = right"
+    DEPS:
+    - Dependencies: numpy (unchanged)
+    - Imports: No new imports
+    - External calls: None
+    VERSION_CONTROL_STATUS:
+    - Repository state: modified (1 file)
+    - Current branch: unknown
+    - Commit history: Changes not yet committed
+    
+    ## COMPRESSION RULES
+    
+    COMPRESS when:
+    - A workflow stage is completed (reproduced bug, applied fix, verified fix)
+    - All recent commands succeeded (returncode: 0)
+    - State can be summarized without losing critical details
+    
+    NO_COMPRESSION_NEEDED when:
+    - Any recent command failed (returncode != 0)
+    - Agent is exploring/reading files (stage 1-2)
+    - Mid-task with incomplete information
+    - Recent error messages need to be preserved
+    
+    ## OUTPUT
+    
+    Based on the conversation above, output either:
+    1. "NO_COMPRESSION_NEEDED" (if criteria met)
+    2. A concise state summary using the format above (if subtask completed successfully)
+    
+    Focus on preserving actionable information needed for the agent to continue work efficiently.
 
 environment:
   cwd: "/testbed"
