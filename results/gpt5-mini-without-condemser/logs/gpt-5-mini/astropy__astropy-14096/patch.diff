@@ -1,0 +1,54 @@
+diff --git a/astropy/coordinates/sky_coordinate.py b/astropy/coordinates/sky_coordinate.py
+index ab475f7d0d..701826099c 100644
+--- a/astropy/coordinates/sky_coordinate.py
++++ b/astropy/coordinates/sky_coordinate.py
+@@ -2,6 +2,7 @@ import copy
+ import operator
+ import re
+ import warnings
++import inspect
+ 
+ import erfa
+ import numpy as np
+@@ -871,6 +872,21 @@ class SkyCoord(ShapedLikeNDArray):
+         Overrides getattr to return coordinates that this can be transformed
+         to, based on the alias attr in the primary transform graph.
+         """
++        # If the attribute is actually defined on the class as a descriptor
++        # (for example a @property on a subclass), try to get it via the
++        # normal object.__getattribute__ so that any exception raised inside
++        # the descriptor (e.g. AttributeError for an inner missing attribute)
++        # is preserved instead of being masked by this method.
++        try:
++            desc = inspect.getattr_static(self.__class__, attr)
++        except Exception:
++            desc = None
++        else:
++            # If it's a descriptor (has __get__) or is a property object,
++            # delegate to the default attribute machinery.
++            if hasattr(desc, "__get__") or isinstance(desc, property):
++                return object.__getattribute__(self, attr)
++
+         if "_sky_coord_frame" in self.__dict__:
+             if self._is_name(attr):
+                 return self  # Should this be a deepcopy of self?
+diff --git a/repro.py b/repro.py
+new file mode 100644
+index 0000000000..60cf198333
+--- /dev/null
++++ b/repro.py
+@@ -0,0 +1,14 @@
++import astropy.coordinates as coord
++
++class custom_coord(coord.SkyCoord):
++    @property
++    def prop(self):
++        return self.random_attr
++
++c = custom_coord('00h42m30s', '+41d12m00s', frame='icrs')
++try:
++    c.prop
++except Exception as e:
++    import traceback, sys
++    traceback.print_exc()
++    print("EXC_TYPE:", type(e), "EXC_MSG:", e)
