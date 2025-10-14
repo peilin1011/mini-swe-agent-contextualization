@@ -1,0 +1,28 @@
+diff --git a/astropy/table/table.py b/astropy/table/table.py
+index 5afe2127a3..a06ce6d015 100644
+--- a/astropy/table/table.py
++++ b/astropy/table/table.py
+@@ -1243,6 +1243,23 @@ class Table:
+         # mixin class
+         if (not isinstance(data, Column) and not data_is_mixin
+                 and isinstance(data, np.ndarray) and len(data.dtype) > 1):
++            # NOTE: Backward-compatibility path. Historically, structured ndarrays
++            # were automatically viewed as NdarrayMixin when added to a Table in
++            # order to signal that unified I/O might not support them. After
++            # improvements in structured-dtype Column support (see #12644), this
++            # implicit conversion is no longer necessary or desirable.
++            # Emit a FutureWarning to inform users of the upcoming behavior change
++            # so they can explicitly wrap such data in Column if they require the
++            # legacy behavior. In a future release, this clause will be removed and
++            # structured arrays will be added as a plain Column by default.
++            warnings.warn(
++                "Adding a structured numpy.ndarray to Table currently converts it "
++                "to an NdarrayMixin. In a future release (5.2), structured arrays will "
++                "be added as a plain Column. To prepare for this change, wrap the "
++                "array explicitly with astropy.table.Column().",
++                FutureWarning,
++                stacklevel=2,
++            )
+             data = data.view(NdarrayMixin)
+             data_is_mixin = True
+ 

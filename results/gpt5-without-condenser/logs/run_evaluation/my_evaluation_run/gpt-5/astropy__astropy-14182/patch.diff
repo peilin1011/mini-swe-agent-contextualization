@@ -1,0 +1,80 @@
+diff --git a/astropy/io/ascii/rst.py b/astropy/io/ascii/rst.py
+index abdeba8efb..cdcb5ae320 100644
+--- a/astropy/io/ascii/rst.py
++++ b/astropy/io/ascii/rst.py
+@@ -32,6 +32,58 @@ class SimpleRSTData(FixedWidthData):
+     splitter_class = FixedWidthTwoLineDataSplitter
+ 
+ 
++
++
++
++class RSTData(FixedWidthData):
++    # Use space-delimited splitter consistent with reStructuredText simple tables
++    splitter_class = FixedWidthTwoLineDataSplitter
++
++    def write(self, lines):
++        # Determine header_rows to include
++        default_header_rows = [] if self.header.start_line is None else ["name"]
++        header_rows = getattr(self, "header_rows", default_header_rows)
++
++        # Data values
++        vals_list = []
++        col_str_iters = self.str_vals()
++        for vals in zip(*col_str_iters):
++            vals_list.append(vals)
++
++        # Header values for requested header rows
++        hdrs_list = []
++        for col_attr in header_rows:
++            vals = ["" if (val := getattr(col.info, col_attr)) is None else str(val)
++                    for col in self.cols]
++            hdrs_list.append(vals)
++
++        # Compute widths from data and headers
++        ncols = len(self.cols)
++        widths = [0] * ncols
++        if vals_list:
++            for i_col in range(ncols):
++                widths[i_col] = max(widths[i_col], max(len(vals[i_col]) for vals in vals_list))
++        if hdrs_list:
++            for i_col in range(ncols):
++                widths[i_col] = max(widths[i_col], max(len(vals[i_col]) for vals in hdrs_list))
++
++        # Build the RST separator (position) line using header.position_char, typically '='
++        pos_vals = [self.header.position_char * width for width in widths]
++
++        # Top border
++        lines.append(self.splitter.join(pos_vals, widths))
++        # Header rows (if any)
++        for vals in hdrs_list:
++            lines.append(self.splitter.join(vals, widths))
++        # Separator between header and data
++        lines.append(self.splitter.join(pos_vals, widths))
++        # Data rows
++        for vals in vals_list:
++            lines.append(self.splitter.join(vals, widths))
++        # Bottom border
++        lines.append(self.splitter.join(pos_vals, widths))
++
++        return lines
+ class RST(FixedWidth):
+     """reStructuredText simple format table.
+ 
+@@ -54,13 +106,8 @@ class RST(FixedWidth):
+ 
+     _format_name = "rst"
+     _description = "reStructuredText simple table"
+-    data_class = SimpleRSTData
++    data_class = RSTData
+     header_class = SimpleRSTHeader
+ 
+-    def __init__(self):
+-        super().__init__(delimiter_pad=None, bookend=False)
+-
+-    def write(self, lines):
+-        lines = super().write(lines)
+-        lines = [lines[1]] + lines + [lines[1]]
+-        return lines
++    def __init__(self, header_rows=None):
++        super().__init__(delimiter_pad=None, bookend=False, header_rows=header_rows)

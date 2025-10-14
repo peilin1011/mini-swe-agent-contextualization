@@ -1,0 +1,52 @@
+diff --git a/astropy/wcs/wcsapi/wrappers/sliced_wcs.py b/astropy/wcs/wcsapi/wrappers/sliced_wcs.py
+index d7605b078c..09ea80f4ad 100644
+--- a/astropy/wcs/wcsapi/wrappers/sliced_wcs.py
++++ b/astropy/wcs/wcsapi/wrappers/sliced_wcs.py
+@@ -152,6 +152,28 @@ class SlicedLowLevelWCS(BaseWCSWrapper):
+         if len(self._pixel_keep) == 0 or len(self._world_keep) == 0:
+             raise ValueError("Cannot slice WCS: the resulting WCS should have "
+                              "at least one pixel and one world dimension.")
++        # Pre-compute default world values for any dropped world dimensions.
++        # These are the world coordinates corresponding to the fixed/sliced
++        # pixel coordinates in the original WCS, evaluated at the first pixel
++        # of the kept axes (i.e., pixel=0 for each kept axis within the slice).
++        # Using these values instead of an arbitrary constant (e.g. 1.0)
++        # ensures correctness when there is coupling between axes (e.g. a
++        # non-trivial PC matrix) and avoids propagating erroneous values into
++        # world_to_pixel transforms on the sliced WCS.
++        self._default_world = [None] * self._wcs.world_n_dim
++        try:
++            # Use zeros for kept pixel dims; _pixel_to_world_values_all will
++            # inject the appropriate fixed indices/offsets for the sliced axes.
++            _world_from_slice = self._pixel_to_world_values_all(*([0] * len(self._pixel_keep)))
++            if not isinstance(_world_from_slice, (list, tuple)):
++                _world_from_slice = [_world_from_slice]
++            for iw in range(self._wcs.world_n_dim):
++                if iw not in self._world_keep:
++                    self._default_world[iw] = np.asanyarray(_world_from_slice[iw])
++        except Exception:
++            # If we cannot pre-compute, fall back to legacy behavior later.
++            pass
++
+ 
+     @lazyproperty
+     def dropped_world_dimensions(self):
+@@ -251,7 +273,10 @@ class SlicedLowLevelWCS(BaseWCSWrapper):
+                 iworld_curr += 1
+                 world_arrays_new.append(world_arrays[iworld_curr])
+             else:
+-                world_arrays_new.append(1.)
++                default_val = getattr(self, '_default_world', [None]*self._wcs.world_n_dim)[iworld]
++                if default_val is None:
++                    default_val = 1.
++                world_arrays_new.append(default_val)
+ 
+         world_arrays_new = np.broadcast_arrays(*world_arrays_new)
+         pixel_arrays = list(self._wcs.world_to_pixel_values(*world_arrays_new))
+@@ -305,4 +330,4 @@ class SlicedLowLevelWCS(BaseWCSWrapper):
+ 
+     @property
+     def axis_correlation_matrix(self):
+-        return self._wcs.axis_correlation_matrix[self._world_keep][:, self._pixel_keep]
++        return self._wcs.axis_correlation_matrix[self._world_keep][:, self._pixel_keep]
+\ No newline at end of file
