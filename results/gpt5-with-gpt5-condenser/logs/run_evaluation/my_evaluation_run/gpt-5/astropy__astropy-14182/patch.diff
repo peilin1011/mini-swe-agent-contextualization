@@ -1,0 +1,35 @@
+diff --git a/astropy/io/ascii/rst.py b/astropy/io/ascii/rst.py
+index abdeba8efb..e99a833f8f 100644
+--- a/astropy/io/ascii/rst.py
++++ b/astropy/io/ascii/rst.py
+@@ -57,10 +57,27 @@ class RST(FixedWidth):
+     data_class = SimpleRSTData
+     header_class = SimpleRSTHeader
+ 
+-    def __init__(self):
+-        super().__init__(delimiter_pad=None, bookend=False)
++    def __init__(self, delimiter_pad=None, bookend=False, header_rows=None):
++        """
++        Initialize the RST writer.
++
++        Parameters
++        ----------
++        delimiter_pad : str or None
++            Padding around the delimiter. For RST simple tables this defaults to None.
++        bookend : bool
++            Whether to include delimiters at the ends. For RST simple tables this defaults to False.
++        header_rows : list[str] or None
++            List specifying which header rows to include (e.g., ["name", "unit"]).
++            If None, defaults to ["name"] via the FixedWidth base class.
++        """
++        super().__init__(delimiter_pad=delimiter_pad, bookend=bookend, header_rows=header_rows)
+ 
+     def write(self, lines):
+         lines = super().write(lines)
+-        lines = [lines[1]] + lines + [lines[1]]
++        # The position (separator) line is at index equal to the number of header rows
++        hdr_rows = getattr(self.header, 'header_rows', ['name'])
++        pos_idx = len(hdr_rows) if hdr_rows is not None else 1
++        pos_line = lines[pos_idx]
++        lines = [pos_line] + lines + [pos_line]
+         return lines

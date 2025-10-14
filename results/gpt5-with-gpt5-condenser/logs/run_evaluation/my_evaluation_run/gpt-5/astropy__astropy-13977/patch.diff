@@ -1,0 +1,27 @@
+diff --git a/astropy/units/quantity.py b/astropy/units/quantity.py
+index b98abfafb0..507f934426 100644
+--- a/astropy/units/quantity.py
++++ b/astropy/units/quantity.py
+@@ -665,10 +665,18 @@ class Quantity(np.ndarray):
+ 
+         # Same for inputs, but here also convert if necessary.
+         arrays = []
+-        for input_, converter in zip(inputs, converters):
+-            input_ = getattr(input_, "value", input_)
+-            arrays.append(converter(input_) if converter else input_)
+-
++        # Track whether any of the inputs are not Quantity instances; if conversion
++        # for such inputs fails, we should return NotImplemented so other operands
++        # get a chance to handle the operation (e.g., via reflected methods).
++        _has_non_quantity_input = any(not isinstance(i, Quantity) for i in inputs)
++        try:
++            for input_, converter in zip(inputs, converters):
++                input_ = getattr(input_, "value", input_)
++                arrays.append(converter(input_) if converter else input_)
++        except (ValueError, TypeError):
++            if _has_non_quantity_input:
++                return NotImplemented
++            raise
+         # Call our superclass's __array_ufunc__
+         result = super().__array_ufunc__(function, method, *arrays, **kwargs)
+         # If unit is None, a plain array is expected (e.g., comparisons), which

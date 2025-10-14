@@ -1,0 +1,33 @@
+diff --git a/astropy/timeseries/core.py b/astropy/timeseries/core.py
+index c279f35f87..58fbbe5791 100644
+--- a/astropy/timeseries/core.py
++++ b/astropy/timeseries/core.py
+@@ -76,10 +76,24 @@ class BaseTimeSeries(QTable):
+ 
+             elif self.colnames[:len(required_columns)] != required_columns:
+ 
+-                raise ValueError("{} object is invalid - expected '{}' "
+-                                 "as the first column{} but found '{}'"
+-                                 .format(self.__class__.__name__, required_columns[0], plural, self.colnames[0]))
+-
++                # If there is a mismatch, determine whether it is due to missing
++                # required columns or simply wrong ordering/content in the prefix.
++                missing = [col for col in self._required_columns if col not in self.colnames]
++                if missing:
++                    missing_plural = 's' if len(missing) > 1 else ''
++                    missing_str = ', '.join(repr(c) for c in missing)
++                    raise ValueError("{} object is invalid - required column{} missing: {}"
++                                     .format(self.__class__.__name__, missing_plural, missing_str))
++                else:
++                    expected_str = ', '.join(repr(c) for c in required_columns)
++                    found_prefix = self.colnames[:len(required_columns)]
++                    if len(found_prefix) == 0:
++                        found_str = 'no columns'
++                    else:
++                        found_str = ', '.join(repr(c) for c in found_prefix)
++                    raise ValueError("{} object is invalid - expected {} "
++                                     "as the first column{} but found {}"
++                                     .format(self.__class__.__name__, expected_str, plural, found_str))
+             if (self._required_columns_relax
+                     and self._required_columns == self.colnames[:len(self._required_columns)]):
+                 self._required_columns_relax = False

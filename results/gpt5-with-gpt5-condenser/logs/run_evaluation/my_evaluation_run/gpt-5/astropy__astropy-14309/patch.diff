@@ -1,0 +1,20 @@
+diff --git a/astropy/io/fits/connect.py b/astropy/io/fits/connect.py
+index 4b6150f4ac..2590dcc69f 100644
+--- a/astropy/io/fits/connect.py
++++ b/astropy/io/fits/connect.py
+@@ -69,7 +69,14 @@ def is_fits(origin, filepath, fileobj, *args, **kwargs):
+             (".fits", ".fits.gz", ".fit", ".fit.gz", ".fts", ".fts.gz")
+         ):
+             return True
+-    return isinstance(args[0], (HDUList, TableHDU, BinTableHDU, GroupsHDU))
++    # For cases where no file object is provided and the filepath does not have a
++    # FITS extension, fall back to checking the first positional argument if present.
++    # Some callers may pass an empty args sequence (e.g., identify_format(..., [], {})),
++    # so we must guard against accessing args[0] to avoid IndexError.
++    if args:
++        return isinstance(args[0], (HDUList, TableHDU, BinTableHDU, GroupsHDU))
++    # If nothing else matched and there are no args to inspect, this is not FITS.
++    return False
+ 
+ 
+ def _decode_mixins(tbl):

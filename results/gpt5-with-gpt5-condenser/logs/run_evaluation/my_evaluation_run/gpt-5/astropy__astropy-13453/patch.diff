@@ -1,0 +1,34 @@
+diff --git a/astropy/io/ascii/html.py b/astropy/io/ascii/html.py
+index 266cf229cc..626b65e600 100644
+--- a/astropy/io/ascii/html.py
++++ b/astropy/io/ascii/html.py
+@@ -350,11 +350,20 @@ class HTML(core.BaseReader):
+ 
+         self.data.header.cols = cols
+ 
++        # Ensure data.cols is set so helper methods (e.g., _set_col_formats) operate on the
++        # actual columns we are about to write. This allows applying user-supplied formats.
++        self.data.cols = cols
++
+         if isinstance(self.data.fill_values, tuple):
+             self.data.fill_values = [self.data.fill_values]
+ 
+         self.data._set_fill_values(cols)
+ 
++        # Apply column formats provided via the writer API (e.g., write(..., formats={...})).
++        # This mirrors the behavior in BaseData.str_vals().
++        if hasattr(self.data, "_set_col_formats"):
++            self.data._set_col_formats()
++
+         lines = []
+ 
+         # Set HTML escaping to False for any column in the raw_html_cols input
+@@ -429,6 +438,8 @@ class HTML(core.BaseReader):
+                                 for i in range(span):
+                                     # Split up multicolumns into separate columns
+                                     new_col = Column([el[i] for el in col])
++                                    # Propagate formatting from the parent multidimensional column
++                                    new_col.info.format = getattr(col.info, "format", None)
+ 
+                                     new_col_iter_str_vals = self.fill_values(
+                                         col, new_col.info.iter_str_vals())
