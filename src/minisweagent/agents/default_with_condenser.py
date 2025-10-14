@@ -124,19 +124,21 @@ class DefaultAgent:
         # 检查是否启用压缩功能
         if not self.config.enable_condenser or not self.summary_model:
             return False
-        # 检查消息数量是否足够
-        if len(self.messages) < self.config.keep_first + 4:
+        
+        # 分析全部上下文消息
+        messages_to_analyze = self.messages
+        # 只需要一次检查：至少需要前2条+keep_first
+        min_messages_needed = 2 + self.config.keep_first
+        if len(messages_to_analyze) < min_messages_needed:
             return False
-        messages_to_analyze = self.messages[self.config.keep_first:]
-        if len(messages_to_analyze) < 4:
-            return False
+        
         # 构建要分析的对话文本
         conversation_text = ""
-        for i, msg in enumerate(messages_to_analyze, start=self.config.keep_first):
+        for i, msg in enumerate(messages_to_analyze):
             role = msg.get('role', 'unknown')
             content = msg.get('content', '')
-            if len(content) > 500:
-                content = content[:500] + "..."
+            if len(content) > 40000:
+                content = content[:40000] + "..."
             conversation_text += f"[Message {i}] {role}:\n{content}\n\n"
         # 检查是否配置了 condenser_template
         if not self.config.condenser_template:
@@ -157,7 +159,7 @@ class DefaultAgent:
 
             # 如果模型返回了总结内容，说明有完成的subtask
             logger.info(f"🤖 {self.config.summary_model['model_name']}: 需要压缩 - 找到已完成的子任务")
-            logger.debug(f"📝 总结内容预览: {response_content[:200]}...")
+            logger.debug(f"📝 总结内容预览: {response_content[:1000]}...")
 
             # 执行压缩，使用模型返回的总结
             return self._execute_compression_with_summary(response_content)
@@ -168,32 +170,36 @@ class DefaultAgent:
             return False
 
     def _execute_compression_with_summary(self, summary: str) -> bool:
-        """执行消息压缩，使用总结模型生成的总结"""
+        """执行消息压缩，将summary插入到指定位置"""
         try:
-            messages_to_compress = self.messages[self.config.keep_first:]
-            if len(messages_to_compress) < 4:
-                return False
-
-            # 压缩逻辑：保留前N条 + 总结 + 当前任务的最后几轮
-            keep_messages = self.messages[:self.config.keep_first]
+            # 1. 保留前2条：system instruction + user PR
+            keep_first_two = self.messages[:2]
             
-            # 添加总结消息
+            # 2. 计算要保留的最后几轮对话
+            messages_after_pr = self.messages[2:]  # system + user PR 之后的所有消息
+            
+            # 3. 计算最后几轮对话
+            if self.config.keep_last_round_per_task > 0:
+                rounds_to_keep = self.config.keep_last_round_per_task * 2
+                last_rounds = messages_after_pr[-rounds_to_keep:]
+            else:
+                last_rounds = []
+            
+            # 4. 创建总结消息
             summary_msg = {
                 "role": "user",
                 "content": f"[Previous work summary]\n{summary}"
             }
             
-            # 保留最后几轮对话
-            last_rounds = messages_to_compress[-self.config.keep_last_round_per_task * 2:] if self.config.keep_last_round_per_task > 0 else []
-            
-            # 重建消息列表
+            # 5. 重建消息列表：前2条 + summary + 最后几轮对话
             original_count = len(self.messages)
-            self.messages = keep_messages + [summary_msg] + last_rounds
+            self.messages = keep_first_two + [summary_msg] + last_rounds
             new_count = len(self.messages)
             
             logger.info(f"🔄 [工作流程压缩] 执行压缩: {original_count} 条消息")
             logger.info(f"✅ [工作流程压缩] 完成: {original_count} → {new_count} 条消息")
             logger.info(f"📊 压缩后消息数量: {new_count}")
+            logger.info(f"📋 保留结构: 前2条 + 总结 + 最后{self.config.keep_last_round_per_task}轮")
             
             return True
             
@@ -272,4 +278,4 @@ class DefaultAgent:
         """Raises Submitted exception with final output if the agent has finished its task."""
         lines = output.get("output", "").lstrip().splitlines(keepends=True)
         if lines and lines[0].strip() in ["MINI_SWE_AGENT_FINAL_OUTPUT", "COMPLETE_TASK_AND_SUBMIT_FINAL_OUTPUT"]:
-            raise Submitted("\n".join(lines[1:]))
+            raise Submitted("".join(lines[1:]))

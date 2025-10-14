@@ -222,7 +222,7 @@ def main(
         keep_first = agent_config.get("keep_first", 4)
         keep_last = agent_config.get("keep_last_round_per_task", 1)
         logger.info("📊 工作流程压缩配置:")
-        logger.info(f"   保留前 {keep_first} 条消息 + 每个已完成任务的最后{keep_last}轮 + 当前任务全部消息")
+        logger.info(f"   保留System和PR + 前 {keep_first} 条消息 + 每个已完成任务的最后{keep_last}轮 + 当前任务全部消息")
         
         # 显示condenser template配置
         condenser_template = agent_config.get("condenser_template", "")

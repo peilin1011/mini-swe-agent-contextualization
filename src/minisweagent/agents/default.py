@@ -134,4 +134,4 @@ class DefaultAgent:
         lines = output.get("output", "").lstrip().splitlines(keepends=True)
         #print(f'output: {lines}, num {len(lines)}')
         if lines and lines[0].strip() in ["MINI_SWE_AGENT_FINAL_OUTPUT", "COMPLETE_TASK_AND_SUBMIT_FINAL_OUTPUT"]:
-            raise Submitted("\n".join(lines[1:]))
+            raise Submitted("".join(lines[1:]))
