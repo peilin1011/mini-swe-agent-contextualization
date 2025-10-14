@@ -9,9 +9,9 @@ agent:
     <format_example>
     THOUGHT: Your reasoning and analysis here
 
-    \`\`\`bash
+    ```bash
     your_command_here
-    \`\`\`
+    ```
     </format_example>
 
     Failure to follow these rules will cause your response to be rejected.
@@ -63,16 +63,16 @@ agent:
     THOUGHT: Here I explain my reasoning process, analysis of the current situation,
     and what I'm trying to accomplish with the command below.
 
-    \`\`\`bash
+    ```bash
     your_command_here
-    \`\`\`
+    ```
     </format_example>
 
     Commands must be specified in a single bash code block:
 
-    \`\`\`bash
+    ```bash
     your_command_here
-    \`\`\`
+    ```
 
     **CRITICAL REQUIREMENTS:**
     - Your response SHOULD include a THOUGHT section explaining your reasoning
@@ -81,37 +81,37 @@ agent:
     - If you include zero or multiple bash blocks, or no command at all, YOUR RESPONSE WILL FAIL
     - Do NOT try to run multiple independent commands in separate blocks in one response
     - Directory or environment variable changes are not persistent. Every action is executed in a new subshell.
-    - However, you can prefix any action with \`MY_ENV_VAR=MY_VALUE cd /path/to/working/dir && ...\` or write/load environment variables from files
+    - However, you can prefix any action with `MY_ENV_VAR=MY_VALUE cd /path/to/working/dir && ...` or write/load environment variables from files
 
     Example of a CORRECT response:
     <example_response>
     THOUGHT: I need to understand the structure of the repository first. Let me check what files are in the current directory to get a better understanding of the codebase.
 
-    \`\`\`bash
+    ```bash
     ls -la
-    \`\`\`
+    ```
     </example_response>
 
     Example of an INCORRECT response:
     <example_response>
     THOUGHT: I need to examine the codebase and then look at a specific file. I'll run multiple commands to do this.
 
-    \`\`\`bash
+    ```bash
     ls -la
-    \`\`\`
+    ```
 
     Now I'll read the file:
 
-    \`\`\`bash
+    ```bash
     cat file.txt
-    \`\`\`
+    ```
     </example_response>
 
     If you need to run multiple commands, either:
     1. Combine them in one block using && or ||
-    \`\`\`bash
+    ```bash
     command1 && command2 || echo "Error occurred"
-    \`\`\`
+    ```
 
     2. Wait for the first command to complete, see its output, then issue the next command in your following response.
 
@@ -124,16 +124,16 @@ agent:
     ## Useful Command Examples
 
     ### Create a new file:
-    \`\`\`bash
+    ```bash
     cat <<'EOF' > newfile.py
     import numpy as np
     hello = "world"
     print(hello)
     EOF
-    \`\`\`
+    ```
 
     ### Edit files with sed:
-    \`\`\`bash
+    ```bash
     # Replace all occurrences
     sed -i 's/old_string/new_string/g' filename.py
 
@@ -145,27 +145,33 @@ agent:
 
     # Replace all occurrences in lines 1-10
     sed -i '1,10s/old_string/new_string/g' filename.py
-    \`\`\`
+    ```
 
     ### View file content:
-    \`\`\`bash
+    ```bash
     # View specific lines with numbers
     nl -ba filename.py | sed -n '10,20p'
-    \`\`\`
+    ```
 
     ### Any other command you want to run
-    \`\`\`bash
+    ```bash
     anything
-    \`\`\`
+    ```
 
     ## Submission
     When you've completed your work (reading, editing, testing), and cannot make further progress
     issue exactly the following command:
 
-    \`\`\`bash
-    echo COMPLETE_TASK_AND_SUBMIT_FINAL_OUTPUT && git add -A && git diff --cached
-    \`\`\`
-
+    ```bash
+    echo COMPLETE_TASK_AND_SUBMIT_FINAL_OUTPUT && \
+         git add -A ':(exclude)pyproject.toml' \
+                    ':(exclude)setup.cfg' \
+                    ':(exclude)setup.py' \
+                    ':(exclude)tox.ini' \
+                    ':(exclude)*.cfg' \
+                    ':(exclude)*.toml' && \
+         git diff --cached
+    ```
     This command will submit your work.
     You cannot continue working (reading, editing, testing) in any way on this task after submitting.
     </instructions>
@@ -202,15 +208,15 @@ agent:
     <response_example>
     Here are some thoughts about why you want to perform the action.
 
-    \`\`\`bash
+    ```bash
     <action>
-    \`\`\`
+    ```
     </response_example>
 
     If you have completed your assignment, please consult the first message about how to
     submit your solution (you will not be able to continue working on this task after that).
   step_limit: 250
-  cost_limit: 0.0  # 本地模型无成本限制
+  cost_limit: 2.0
 
 environment:
   cwd: "/testbed"

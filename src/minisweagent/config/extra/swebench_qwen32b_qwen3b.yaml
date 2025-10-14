@@ -163,9 +163,15 @@ agent:
     issue exactly the following command:
 
     ```bash
-    echo COMPLETE_TASK_AND_SUBMIT_FINAL_OUTPUT && git add -A && git diff --cached
+    echo COMPLETE_TASK_AND_SUBMIT_FINAL_OUTPUT && \
+         git add -A ':(exclude)pyproject.toml' \
+                    ':(exclude)setup.cfg' \
+                    ':(exclude)setup.py' \
+                    ':(exclude)tox.ini' \
+                    ':(exclude)*.cfg' \
+                    ':(exclude)*.toml' && \
+         git diff --cached
     ```
-
     This command will submit your work.
     You cannot continue working (reading, editing, testing) in any way on this task after submitting.
     </instructions>
@@ -210,7 +216,7 @@ agent:
     If you have completed your assignment, please consult the first message about how to
     submit your solution (you will not be able to continue working on this task after that).
   step_limit: 250
-  cost_limit: 2.
+  cost_limit: 2.0
   
   # 工作流程压缩配置 - 使用 Qwen32B 作为主模型，Qwen3B 作为压缩模型
   enable_condenser: True
