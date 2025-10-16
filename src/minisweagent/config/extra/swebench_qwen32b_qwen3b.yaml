@@ -220,14 +220,15 @@ agent:
   
   # 工作流程压缩配置 - 使用 Qwen32B 作为主模型，Qwen3B 作为压缩模型
   enable_condenser: True
-  keep_first: 4
-  keep_last_round_per_task: 1
+  keep_first: 3
+  keep_last_round_per_task: 2
   
   # Summary model 配置 - 使用轻量级的 Qwen3B 模型进行压缩
   summary_model:
     model_name: "Qwen/Qwen3-32B"
     api_base: "http://localhost:8001/v1"
     api_key: "EMPTY"
+    temperature: 0.0
   
   # Condenser prompt 模板
   condenser_template: |
