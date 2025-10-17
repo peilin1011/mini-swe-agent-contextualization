@@ -18,7 +18,7 @@ import yaml
 from datasets import load_dataset
 from rich.live import Live
 
-from minisweagent.agents.default_with_condenser import DefaultAgent
+from minisweagent.agents.default_with_condenser_and_record import DefaultAgent
 from minisweagent.config import builtin_config_dir, get_config_path
 from minisweagent.environments.docker import DockerEnvironment
 from minisweagent.environments.singularity import SingularityEnvironment
@@ -65,9 +65,12 @@ class ProgressTrackingAgent(DefaultAgent):
 
     def step(self) -> dict:
         """Override step to provide progress updates."""
-        self.progress_manager.update_instance_status(
-            self.instance_id, f"Step {self.model.n_calls + 1:3d} (${self.model.cost:.2f})"
-        )
+        # 构建状态信息，包含summary model统计
+        status_info = f"Step {self.model.n_calls + 1:3d} (${self.model.cost:.2f})"
+        if hasattr(self, 'summary_model_calls') and self.summary_model_calls > 0:
+            status_info += f" | Summary: {self.summary_model_calls} compressions (${self.summary_model_cost:.4f})"
+        
+        self.progress_manager.update_instance_status(self.instance_id, status_info)
         return super().step()
 
 
@@ -159,6 +162,17 @@ def process_instance(
             **agent_config,
         )
         exit_status, result = agent.run(task)
+        
+        # 显示最终统计信息
+        if hasattr(agent, 'get_summary_model_stats'):
+            summary_stats = agent.get_summary_model_stats()
+            if summary_stats["summary_model_calls"] > 0:
+                logger.info(f"📊 [{instance_id}] Summary模型最终统计:")
+                logger.info(f"   模型: {summary_stats['summary_model_name']}")
+                logger.info(f"   压缩次数: {summary_stats['summary_model_calls']}")
+                logger.info(f"   总花费: ${summary_stats['summary_model_cost']:.4f}")
+                logger.info(f"   主模型花费: ${agent.model.cost:.4f}")
+                logger.info(f"   总花费: ${agent.model.cost + summary_stats['summary_model_cost']:.4f}")
     except Exception as e:
         logger.error(f"Error processing instance {instance_id}: {e}\n{traceback.format_exc()}")
         exit_status, result = type(e).__name__, str(e)

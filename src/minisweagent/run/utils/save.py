@@ -49,6 +49,8 @@ def save_traj(
             "model_stats": {
                 "instance_cost": 0.0,
                 "api_calls": 0,
+                "summary_model_compressions": 0,
+                "summary_model_cost": 0.0,
             },
             "mini_version": __version__,
         },
@@ -58,6 +60,14 @@ def save_traj(
     if agent is not None:
         data["info"]["model_stats"]["instance_cost"] = agent.model.cost
         data["info"]["model_stats"]["api_calls"] = agent.model.n_calls
+        
+        # 添加summary model统计信息
+        if hasattr(agent, 'get_summary_model_stats'):
+            summary_stats = agent.get_summary_model_stats()
+            data["info"]["model_stats"]["summary_model_compressions"] = summary_stats["summary_model_calls"]
+            data["info"]["model_stats"]["summary_model_cost"] = summary_stats["summary_model_cost"]
+            data["info"]["model_stats"]["summary_model_name"] = summary_stats["summary_model_name"]
+        
         data["messages"] = agent.messages
         data["info"]["config"] = {
             "agent": _asdict(agent.config),
